@@ -1,0 +1,9 @@
+bool intersectTriangle( const TVector &orig, const TVector &dir,
+			float vert0[3], float vert1[3], float vert2[3],
+			float &t, float &u, float &v ) {
+  float edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+  float det, inv_det;
+
+  // find vectors for 2 edges sharing vert0
+  
+}

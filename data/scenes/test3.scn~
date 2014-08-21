@@ -1,0 +1,78 @@
+include 'colors.inc'
+
+//--------- CAMERA ----------
+declare camera1 = camera: classic {
+  location = vector< -50, 80, -50 >;
+  lookat = vector< 0, 0, 0 >;
+};
+
+//--------- LIGHT ----------
+declare dot1 = light: dot {
+  location = vector<0,500,0>;
+  color = white;
+};
+
+//--------- OBJECT ----------
+declare plane1 = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -15;
+  };
+  texture = texture {
+    pigment = pigment: checker { 
+      white = green;
+      black = yellow;
+      size = vector<20,20,20>;
+    };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.5;
+      reflection = 0.4;
+      specular = 0.5;
+      roughness = 1.0/0.05;
+    };
+  };
+};
+
+//--------- ATMOSPHERIC ----------
+declare atm1 = atmospheric: volumetric {
+  density = 1.0/20.0;
+  color = LightSteelBlue;
+  filter = 0.5;
+  volume = primitive: cylinder {
+    center = vector< 0, 0, 0 >;
+    axis = vector< 1, 0, 0 >;
+    radius = 10;
+  };
+};
+
+
+//--------------------------
+//--------- WORLD ----------
+//--------------------------
+world {
+  objects = [[ plane1 ]];
+
+  cameras = [[ camera1 ]];
+
+  currentCamera = cameras[0];
+
+  lights = [[ dot1 ]];
+
+  atmospheric = atm1;
+}
+
+//--------------------------
+//-------- SETTING ---------
+//--------------------------
+settings {
+  maxReflectionDepth = 3;
+  maxTransmissionDepth = 6;
+  shading = true;
+  shadow = true;
+  reflection = false;
+  transmission = false;
+  atmospheric = true;
+  rendering = 'bilinear';
+  screenshot = 'quincunx';
+}

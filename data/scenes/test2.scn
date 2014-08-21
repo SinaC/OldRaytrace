@@ -1,0 +1,137 @@
+include 'colors.inc'
+include 'constants.inc'
+
+declare light1 = light: dot {
+  location = vector<500, 550, -100>;
+  color = white;
+//  spotlight
+//  radius 1
+//  falloff 1.1
+//  tightness 1
+//  point_at  <-19,-4,7>
+};
+
+declare camera1 = camera: classic {
+  location =  vector<-0.5, 2.5, -7.0>;
+  lookat = vector<-0.5, 0.5,  0.0>;
+};
+
+declare floor = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -2;
+  };
+  texture = texture {
+    pigment = pigment: checker { 
+      white = green;
+      black = yellow;
+      size = vector< 20, 20, 20 >;
+      simple = yellow;
+    };
+//    pigment = pigment: solid { color = white; };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.8;
+    };
+  };
+};
+
+declare Ri=0.95;
+
+declare glass = object {
+  primitive = primitive: csg {
+    operation = 'difference';
+    primitives = [[
+                    [[ primitive: cylinder {
+                         center = vector< 0, 0, 0 >;
+                         axis = vector< 0, 1, 0 >;
+                         height = 4;
+                         radius = 1;
+                       }, false ]],
+                    [[ primitive: sphere {
+                         center = vector< 0, 0.8, 0 >;
+                         radius = Ri;
+                       }, true ]],
+                    [[ primitive: cylinder {
+                         center = vector< 0, 0.605, 0 >;
+                         axis = vector< 0, 1, 0 >;
+                         height = 2.81;
+                         radius = Ri;
+                       }, true ]],
+                    [[ primitive: sphere {
+                         center = vector< 0, -1.9, 0 >;
+                         radius = 0.1;
+                       }, true ]]
+                ]];
+  };
+  texture = texture { // T_Glass1
+    finish = finish { // F_Glass1
+      ambient = 0.0;
+      diffuse = 0.0;
+      reflection = 0.1;
+      transmission = 0.7;
+    };
+//  pigment { color rgbf<1.0, 1.0, 1.0, 0.7> } // P_Glass1
+    pigment = pigment: solid { color = rgb<1.0, 1.0, 1.0>; };
+    interior = interior {
+      ior = 1.5;
+    };
+  };
+};
+
+declare liquid = object {
+  primitive = primitive: csg {
+    operation = 'merge';
+    primitives = [[
+                    primitive: sphere {
+                      center = vector< 0, -0.8, 0 >;
+                      radius = Ri + 0.00000001;
+                    },
+                    primitive: cylinder {
+                      center = vector< 0, -0.1, 0 >;
+                      axis = vector< 0, 1, 0 >;
+                      height = 1.4;
+                      radius = Ri + 0.00000001;
+                    }
+                 ]];
+  };
+  texture = texture {
+    finish = finish {
+      ambient = 0.0;
+      diffuse = 0.0;
+      reflection = 0.3;
+      transmission = 0.95;
+    };
+//   pigment {rgbf <0.9, 0.1, 0.2, 0.95>}
+    pigment = pigment: solid { color = rgb<0.9, 0.1, 0.2>; };
+    interior = interior {
+      ior = 1.2;
+    };
+  };
+};
+
+world {
+  cameras = [[ camera1 ]];
+  currentCamera = cameras[ 0 ];
+
+  lights = [[ light1 ]];
+
+  //objects = [[ floor, glass, liquid ]];
+objects = [[ floor, glass ]];
+}
+
+settings {
+  maxReflectionDepth = 4;
+  maxTransmissionDepth = 8;
+
+  shading = true;
+  shadow = true;
+  shadowCache = false;
+  diffuse = true;
+  ambient = true;
+  reflection = true;
+  transmission = true;
+  atmospheric = false;
+
+  moveStep = 0.5f;
+}

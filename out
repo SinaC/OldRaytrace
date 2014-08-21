@@ -1,0 +1,112 @@
+OBJECT
+PRIMITIVE
+PLANE
+normal:  ( 0.00000, 1.00000, 0.00000 )
+distance to origin: -15.00000
+TEXTURE: 
+finish
+  reflectionFactor:  0.40  transmissionFactor:  0.00
+  ambientFactor:  0.20  diffuseFactor:  0.50
+  specularFactor:  0.00  specularExponent: 20.00
+  phongFactor:  0.00  phongSize: 40.00
+  brillance:  0.00
+pigment
+anchor:  ( 0.00000, 0.00000, 0.00000 )
+SOLID
+color: 
+R:  1.00  G:  1.00  B:  1.00
+NO BOUNDING VOLUME
+OBJECT
+PRIMITIVE
+SPHERE
+center:  ( 0.00000, 0.00000, 0.00000 )
+radius: 10.00000
+TEXTURE: 
+finish
+  reflectionFactor:  0.00  transmissionFactor:  0.00
+  ambientFactor:  0.10  diffuseFactor:  1.00
+  specularFactor:  0.00  specularExponent: 20.00
+  phongFactor:  0.00  phongSize: 40.00
+  brillance:  0.00
+pigment
+anchor:  ( 0.00000, 0.00000, 0.00000 )
+SPHERICAL MAPPING
+map= 
+width:  256  height:  256
+data: 0
+palette: 0
+data color: e80020
+NO BOUNDING VOLUME
+OBJECT
+PRIMITIVE
+BOX
+min:  ( -5.00000, 40.00000, -20.00000 )
+max:  ( -5.00000, 40.00000, -20.00000 )
+TEXTURE: 
+finish
+  reflectionFactor:  0.00  transmissionFactor:  0.00
+  ambientFactor:  0.10  diffuseFactor:  1.00
+  specularFactor:  0.00  specularExponent: 20.00
+  phongFactor:  0.00  phongSize: 40.00
+  brillance:  0.00
+pigment
+anchor:  ( 10.00000, 55.00000, 0.00000 )
+CUBE MAPPING
+map= 
+width:  256  height:  256
+data: 0
+palette: 9f0080
+data color: f50020
+NO BOUNDING VOLUME
+CAMERA
+location:  ( -50.00000, 80.00000, -50.00000 )
+lookat:  ( 0.00000, 50.00000, 0.00000 )
+vertical:  ( 0.00000, 1.00000, 0.00000 )
+fov: 90.00000
+LIGHT
+color:
+R:  1.00  G:  1.00  B:  1.00
+brightness: 1.00000
+LIGHT
+color:
+R:  1.00  G:  1.00  B:  1.00
+brightness: 1.00000
+CURRENT CAMERA:
+location:  ( -50.00000, 80.00000, -50.00000 )
+lookat:  ( 0.00000, 50.00000, 0.00000 )
+vertical:  ( 0.00000, 1.00000, 0.00000 )
+fov: 90.00000
+AMBIENT LIGHT:
+color
+R:  1.00  G:  1.00  B:  1.00
+BACKGROUND: 
+anchor:  ( 0.00000, 0.00000, 0.00000 )
+SKY MAP
+map= 
+width:  512  height:  256
+data: 0
+palette: 9f2bf0
+data color: 1020020
+ATMOSPHERIC: 
+NORMAL FOG
+density: 0.50000
+color: 
+R:  0.56  G:  0.56  B:  0.74
+turbulence: 
+turbulence: ( 0.57735, 0.57735, -0.57735 )
+#octaves: 6
+lambda: 2.00000
+omega: 0.50000
+GROUND FOG
+altitude: 10.00000
+offset: -15.00000
+up: ( 0.00000, 1.00000, 0.00000 )
+===============
+START RENDERING
+===============
+=======
+LEAVING
+=======
+time: 3.70204
+#frames: 45
+fps: 12.15546

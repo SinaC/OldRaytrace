@@ -1,0 +1,659 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "uniformgrid.h"
+#include "../object.h"
+#include "../primitives/primitive.h"
+#include "../ray.h"
+
+#define __DEBUG__
+
+UniformGrid::UniformGrid() {
+  m_Grid = NULL;
+}
+
+UniformGrid::~UniformGrid() {
+  if ( m_Grid != NULL ) {
+    //--    for ( int i = 0; i < m_GridSize*m_GridSize*m_GridSize; i++ )
+    //--      m_Grid[i].clear();
+    delete [] m_Grid;
+  }
+}
+
+bool UniformGrid::build(  const vector<TObject*> &a_ObjList, const u32 a_GridSize, const BoundingAABB &a_Extends ) {
+#ifdef __DEBUG__
+  printf("UniformGrid::build\n");
+#endif
+
+  m_GridSize = a_GridSize;
+  // m_GridShift=log2(m_GridSize)
+  m_GridShift = 0;
+  u32 tmp = m_GridSize;
+  while ( ( tmp >>= 1 ) != 0 ) m_GridShift++;
+  // initialize regular grid
+  //--  m_Grid = new vector<TObject *>[m_GridSize * m_GridSize * m_GridSize];
+  m_Grid = new ObjectList * [m_GridSize * m_GridSize * m_GridSize];
+  memset( m_Grid, 0, m_GridSize * m_GridSize * m_GridSize * 4 );
+  // calculate cell width, height and depth
+  m_Extends = a_Extends;
+  TVector3 extendsSize = (m_Extends.m_Max - m_Extends.m_Min);
+  float dx = extendsSize.x / m_GridSize, dx_reci = 1.0f / dx;
+  float dy = extendsSize.y / m_GridSize, dy_reci = 1.0f / dy;
+  float dz = extendsSize.z / m_GridSize, dz_reci = 1.0f / dz;
+  // precalculate 1 / size of a cell (for x, y and z)
+  m_SR.x = m_GridSize / extendsSize.x; // = dx_reci
+  m_SR.y = m_GridSize / extendsSize.y; // = dy_reci
+  m_SR.z = m_GridSize / extendsSize.z; // = dz_reci
+  // precalculate size of a cell (for x, y, and z)
+  m_CW = TVector3( dx, dy, dz );
+#ifdef __DEBUG__
+  printf("gridSize: %d\n", m_GridSize );
+  printf("gridShift: %d\n", m_GridShift );
+  m_Extends.print("world extends");
+  printf("dx: %5.5f  dy: %5.5f  dz: %5.5f\n", dx, dy, dz );
+  m_SR.print("SR: ");
+  m_CW.print("SW: ");
+  printf("building...\n");
+  fflush(stdout);
+#endif
+  // store primitives in the grid cells
+  for ( vector<TObject *>::const_iterator iterO = a_ObjList.begin();
+	iterO != a_ObjList.end();
+	iterO++ ) {
+    TObject *obj = (*iterO);
+    TPrimitive *prim = obj->primitive;
+    BoundingAABB bound;
+    prim->computeBoundingAABB( bound );
+    // find out which cells could contain the primitive (based on aabb)
+    int x1 = (int)((bound.m_Min.x - m_Extends.m_Min.x) * dx_reci),
+      x2 = (int)((bound.m_Max.x - m_Extends.m_Min.x) * dx_reci) + 1;
+    x1 = (x1 < 0) ? 0 : x1,
+      x2 = (x2 > (m_GridSize - 1)) ? m_GridSize - 1 : x2;
+    int y1 = (int)((bound.m_Min.y - m_Extends.m_Min.y) * dy_reci),
+      y2 = (int)((bound.m_Max.y - m_Extends.m_Min.y) * dy_reci) + 1;
+    y1 = (y1 < 0) ? 0 : y1,
+      y2 = (y2 > (m_GridSize - 1)) ? m_GridSize - 1 : y2;
+    int z1 = (int)((bound.m_Min.z - m_Extends.m_Min.z) * dz_reci),
+      z2 = (int)((bound.m_Max.z - m_Extends.m_Min.z) * dz_reci) + 1;
+    z1 = (z1 < 0) ? 0 : z1,
+      z2 = (z2 > (m_GridSize - 1)) ? m_GridSize - 1 : z2;
+
+#ifdef __DEBUG__
+    prim->print("primitive: ");
+    bound.print("primitive aabb: ");
+    printf("x: [%d,%d]  y: [%d,%d]  z: [%d,%d]\n", x1, x2, y1, y2, z1, z2 );
+    printf("idx: [%d]  [%d]   max idx: %d\n",
+	   x1 + ( y1 * m_GridSize ) + ( z1 * m_GridSize * m_GridSize ),
+	   x2 + ( y2 * m_GridSize ) + ( z2 * m_GridSize * m_GridSize ),
+	   m_GridSize*m_GridSize*m_GridSize);
+#endif
+
+    // loop over candidate cells
+    for ( int x = x1; x <= x2; x++ )
+      for ( int y = y1; y <= y2; y++ )
+	for ( int z = z1; z <= z2; z++ ) {
+	  // construct aabb for current cell
+	  BoundingAABB cell;
+	  cell.m_Min = TVector3( m_Extends.m_Min.x + x * dx, m_Extends.m_Min.y + y * dy, m_Extends.m_Min.z + z * dz );
+	  cell.m_Max = cell.m_Min + TVector3( dx, dy, dz );
+#ifdef __DEBUG__
+	  printf("x: [%d]  y: [%d]  z: [%d]\n", x, y, z );
+	  cell.print("cell: ");
+#endif
+	  // do an accurate aabb / primitive intersection test
+	  if ( prim->intersectsBox( cell ) ) {
+#ifdef __DEBUG__
+	    printf("inserted in cell list\n");
+#endif
+	    int idx = x + ( y * m_GridSize ) + ( z * m_GridSize * m_GridSize );
+	    // object intersects cell; add to object list
+	    ObjectList* l = new ObjectList();
+	    l->m_Object = obj;
+	    l->m_Next = m_Grid[idx];
+	    m_Grid[idx] = l;
+	    //--	    m_Grid[idx].push_back( obj );
+	  }
+	}
+  }
+
+#ifdef __DEBUG__
+  printf("done...\n");
+#endif
+  return true;
+}
+
+bool UniformGrid::findClosestIntersectionCamera( const TRay &a_Ray,
+						 TObject *&a_Obj, float &a_Distance ) const {
+  bool retval = false;
+  // setup 3DDDA (double check reusability of primary ray data)
+  TVector3 cb, tmax, tdelta, cell;
+  cell = (a_Ray.origin - m_Extends.m_Min) * m_SR;
+  int stepX, outX, X = (int)cell.x;
+  int stepY, outY, Y = (int)cell.y;
+  int stepZ, outZ, Z = (int)cell.z;
+#ifdef __DEBUG__
+  printf("UniformGrid::findClosestIntersectionCamera\n");
+  a_Ray.origin.print("ray origin: ");
+  a_Ray.direction.print("ray direction: ");
+  cell.print("cell: ");
+  printf("X: %d  Y: %d  Z: %d\n", X, Y, Z ); fflush(stdout);
+#endif
+  if ((X < 0) || (X >= m_GridSize) || (Y < 0) || (Y >= m_GridSize) || (Z < 0) || (Z >= m_GridSize))
+    return false;
+  if ( a_Ray.direction.x > 0 ) {
+    stepX = 1, outX = m_GridSize;
+    cb.x = m_Extends.m_Min.x + (X + 1) * m_CW.x;
+  }
+  else {
+    stepX = -1, outX = -1;
+    cb.x = m_Extends.m_Min.x + X * m_CW.x;
+  }
+  if ( a_Ray.direction.y > 0.0f ) {
+    stepY = 1, outY = m_GridSize;
+    cb.y = m_Extends.m_Min.y + (Y + 1) * m_CW.y; 
+  }
+  else {
+    stepY = -1, outY = -1;
+    cb.y = m_Extends.m_Min.y + Y * m_CW.y;
+  }
+  if ( a_Ray.direction.z > 0.0f ) {
+    stepZ = 1, outZ = m_GridSize;
+    cb.z = m_Extends.m_Min.z + (Z + 1) * m_CW.z;
+  }
+  else {
+    stepZ = -1, outZ = -1;
+    cb.z = m_Extends.m_Min.z + Z * m_CW.z;
+  }
+#ifdef __DEBUG__
+  printf("stepX [%d]  stepY [%d]  stepZ [%d]\n", stepX, stepY, stepZ ); fflush(stdout);
+  printf("outX [%d]  outY [%d]  outZ [%d]\n", outX, outY, outZ ); fflush(stdout);
+  cb.print("cb: "); fflush(stdout);
+#endif
+  if ( a_Ray.direction.x != 0 ) {
+    tmax.x = (cb.x - a_Ray.origin.x) * a_Ray.reverseDirection.x;
+    tdelta.x = m_CW.x * stepX * a_Ray.reverseDirection.x;
+  }
+  else tmax.x = INFINITE;
+  if ( a_Ray.direction.y != 0 ) {
+    tmax.y = (cb.y - a_Ray.origin.y) * a_Ray.reverseDirection.y;
+    tdelta.y = m_CW.y * stepY * a_Ray.reverseDirection.y;
+  }
+  else tmax.y = INFINITE;
+  if ( a_Ray.direction.z != 0 ) {
+    tmax.z = (cb.z - a_Ray.origin.z) * a_Ray.reverseDirection.z;
+    tdelta.z = m_CW.z * stepZ * a_Ray.reverseDirection.z;
+  }
+  else tmax.z = INFINITE;
+#ifdef __DEBUG__
+  tmax.print("tmax: "); fflush(stdout);
+  tdelta.print("tdelta: "); fflush(stdout);
+#endif
+  // start stepping
+  //--  vector<TObject*> *list = NULL;
+  ObjectList *list = NULL;
+  a_Obj = NULL;
+  // trace primary ray
+  TIntersection inter;
+  while (1) {
+    //--    list = &m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    list = m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+#ifdef __DEBUG__
+    printf("first while\n");
+    printf("X:[%d]  Y:[%d]  Z:[%d] -> idx: %d  [%x]\n",
+	   X, Y, Z, X + (Y << m_GridShift) + (Z << (m_GridShift * 2)), (int)list );
+#endif
+    //--    for ( vector<TObject *>::const_iterator iterO = list->begin();
+    //--	  iterO != list->end();
+    //--	  iterO++ ) {
+    while ( list != NULL ) {
+      //--      TObject *obj = (*iterO);
+      TObject *obj = list->m_Object;
+      TPrimitive *prim = obj->primitive;
+      bool result;
+      if ( prim->rayId != a_Ray.rayId ) {
+#ifdef __DEBUG__
+	prim->print("testing intersection with prim: ");
+#endif
+	prim->rayId = a_Ray.rayId; // assign ray id to primitive
+	if ( result = prim->intersectionRayCamera( a_Ray, inter ) ) {
+	  retval = result;
+	  a_Distance = inter.distance;
+	  a_Obj = obj;
+	  goto testloop;
+	}
+      }
+      list = list->m_Next;
+    }
+    if ( tmax.x < tmax.y ) {
+      if ( tmax.x < tmax.z ) {
+	X = X + stepX;
+	if ( X == outX ) return false;
+	tmax.x += tdelta.x;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+    else {
+      if ( tmax.y < tmax.z ) {
+	Y = Y + stepY;
+	if ( Y == outY ) return false;
+	tmax.y += tdelta.y;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+  }
+ testloop:
+  while (1) {
+    //--    list = &m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    list = m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    //--    for ( vector<TObject *>::const_iterator iterO = list->begin();
+    //--	  iterO != list->end();
+    //--	  iterO++ ) {
+#ifdef __DEBUG__
+    printf("second while\n");
+    printf("X:[%d]  Y:[%d]  Z:[%d] -> idx: %d  [%x]\n",
+	   X, Y, Z, X + (Y << m_GridShift) + (Z << (m_GridShift * 2)), (int)list );
+#endif
+    while ( list != NULL ) {
+      //--      TObject *obj = (*iterO);
+      TObject *obj = list->m_Object;
+      TPrimitive *prim = obj->primitive;
+      bool result;
+      if ( prim->rayId != a_Ray.rayId ) {
+#ifdef __DEBUG__
+	prim->print("testing intersection with prim: ");
+#endif
+	prim->rayId = a_Ray.rayId; // assign ray id to primitive
+	if ( result = prim->intersectionRayCamera( a_Ray, inter ) ) {
+	  a_Obj = obj;
+	  a_Distance = inter.distance;
+	  retval = result;
+	}
+      }
+      list = list->m_Next;
+    }
+    if ( tmax.x < tmax.y ) {
+      if ( tmax.x < tmax.z ) {
+	if ( a_Distance < tmax.x ) break;
+	X = X + stepX;
+	if ( X == outX ) break;
+	tmax.x += tdelta.x;
+      }
+      else {
+	if ( a_Distance < tmax.z ) break;
+	Z = Z + stepZ;
+	if ( Z == outZ ) break;
+	tmax.z += tdelta.z;
+      }
+    }
+    else {
+      if ( tmax.y < tmax.z ) {
+	if ( a_Distance < tmax.y ) break;
+	Y = Y + stepY;
+	if ( Y == outY ) break;
+	tmax.y += tdelta.y;
+      }
+      else {
+	if ( a_Distance < tmax.z ) break;
+	Z = Z + stepZ;
+	if ( Z == outZ ) break;
+	tmax.z += tdelta.z;
+      }
+    }
+  }
+  return retval;
+}
+
+bool UniformGrid::findClosestIntersection( const TRay &a_Ray,
+					   TObject *&a_Obj, float &a_Distance ) const {
+  bool retval = false;
+  // setup 3DDDA (double check reusability of primary ray data)
+  TVector3 cb, tmax, tdelta, cell;
+  cell = (a_Ray.origin - m_Extends.m_Min) * m_SR;
+  int stepX, outX, X = (int)cell.x;
+  int stepY, outY, Y = (int)cell.y;
+  int stepZ, outZ, Z = (int)cell.z;
+#ifdef __DEBUG__
+  printf("UniformGrid::findClosestIntersection\n");
+  a_Ray.origin.print("ray origin: ");
+  a_Ray.direction.print("ray direction: ");
+  cell.print("cell: ");
+  printf("X: %d  Y: %d  Z: %d\n", X, Y, Z ); fflush(stdout);
+#endif
+  if ( (X < 0) || (X >= m_GridSize)
+       || (Y < 0) || (Y >= m_GridSize)
+       || (Z < 0) || (Z >= m_GridSize) )
+    return false;
+  if ( a_Ray.direction.x > 0 ) {
+    stepX = 1, outX = m_GridSize;
+    cb.x = m_Extends.m_Min.x + (X + 1) * m_CW.x;
+  }
+  else {
+    stepX = -1, outX = -1;
+    cb.x = m_Extends.m_Min.x + X * m_CW.x;
+  }
+  if ( a_Ray.direction.y > 0.0f ) {
+    stepY = 1, outY = m_GridSize;
+    cb.y = m_Extends.m_Min.y + (Y + 1) * m_CW.y; 
+  }
+  else {
+    stepY = -1, outY = -1;
+    cb.y = m_Extends.m_Min.y + Y * m_CW.y;
+  }
+  if ( a_Ray.direction.z > 0.0f ) {
+    stepZ = 1, outZ = m_GridSize;
+    cb.z = m_Extends.m_Min.z + (Z + 1) * m_CW.z;
+  }
+  else {
+    stepZ = -1, outZ = -1;
+    cb.z = m_Extends.m_Min.z + Z * m_CW.z;
+  }
+#ifdef __DEBUG__
+  printf("stepX [%d]  stepY [%d]  stepZ [%d]\n", stepX, stepY, stepZ ); fflush(stdout);
+  printf("outX [%d]  outY [%d]  outZ [%d]\n", outX, outY, outZ ); fflush(stdout);
+  cb.print("cb: "); fflush(stdout);
+#endif
+  if ( a_Ray.direction.x != 0 ) {
+    tmax.x = (cb.x - a_Ray.origin.x) * a_Ray.reverseDirection.x;
+    tdelta.x = m_CW.x * stepX * a_Ray.reverseDirection.x;
+  }
+  else tmax.x = INFINITE;
+  if ( a_Ray.direction.y != 0 ) {
+    tmax.y = (cb.y - a_Ray.origin.y) * a_Ray.reverseDirection.y;
+    tdelta.y = m_CW.y * stepY * a_Ray.reverseDirection.y;
+  }
+  else tmax.y = INFINITE;
+  if ( a_Ray.direction.z != 0 ) {
+    tmax.z = (cb.z - a_Ray.origin.z) * a_Ray.reverseDirection.z;
+    tdelta.z = m_CW.z * stepZ * a_Ray.reverseDirection.z;
+  }
+  else tmax.z = INFINITE;
+#ifdef __DEBUG__
+  tmax.print("tmax: "); fflush(stdout);
+  tdelta.print("tdelta: "); fflush(stdout);
+#endif
+  // start stepping
+  //--  vector<TObject*> *list = NULL;
+  ObjectList *list = NULL;
+  a_Obj = NULL;
+  // trace primary ray
+  TIntersection inter;
+  while (1) {
+    //--    list = &m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    list = m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+#ifdef __DEBUG__
+    printf("first while\n");
+    printf("X:[%d]  Y:[%d]  Z:[%d] -> idx: %d  [%x]\n",
+	   X, Y, Z, X + (Y << m_GridShift) + (Z << (m_GridShift * 2)), (int)list );
+#endif
+    //--    for ( vector<TObject *>::const_iterator iterO = list->begin();
+    //--	  iterO != list->end();
+    //--	  iterO++ ) {
+    while ( list != NULL ) {
+      //--      TObject *obj = (*iterO);
+      TObject *obj = list->m_Object;
+      TPrimitive *prim = obj->primitive;
+      bool result;
+      if ( prim->rayId != a_Ray.rayId ) {
+#ifdef __DEBUG__
+	prim->print("testing intersection with prim: ");
+#endif
+	prim->rayId = a_Ray.rayId; // assign ray id to primitive
+	if ( result = prim->intersectionRay( a_Ray, inter ) ) {
+	  retval = result;
+	  a_Distance = inter.distance;
+	  a_Obj = obj;
+	  goto testloop;
+	}
+      }
+      list = list->m_Next;
+    }
+    if ( tmax.x < tmax.y ) {
+      if ( tmax.x < tmax.z ) {
+	X = X + stepX;
+	if ( X == outX ) return false;
+	tmax.x += tdelta.x;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+    else {
+      if ( tmax.y < tmax.z ) {
+	Y = Y + stepY;
+	if ( Y == outY ) return false;
+	tmax.y += tdelta.y;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+  }
+ testloop:
+  while (1) {
+    //--    list = &m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    list = m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    //--    for ( vector<TObject *>::const_iterator iterO = list->begin();
+    //--	  iterO != list->end();
+    //--	  iterO++ ) {
+#ifdef __DEBUG__
+    printf("second while\n");
+    printf("X:[%d]  Y:[%d]  Z:[%d] -> idx: %d  [%x]\n",
+	   X, Y, Z, X + (Y << m_GridShift) + (Z << (m_GridShift * 2)), (int)list );
+#endif
+    while ( list != NULL ) {
+      //--      TObject *obj = (*iterO);
+      TObject *obj = list->m_Object;
+      TPrimitive *prim = obj->primitive;
+      bool result;
+      if ( prim->rayId != a_Ray.rayId ) {
+#ifdef __DEBUG__
+	prim->print("testing intersection with prim: ");
+#endif
+	prim->rayId = a_Ray.rayId; // assign ray id to primitive
+	if ( result = prim->intersectionRay( a_Ray, inter ) ) {
+	  a_Obj = obj;
+	  a_Distance = inter.distance;
+	  retval = result;
+	}
+      }
+      list = list->m_Next;
+    }
+    if ( tmax.x < tmax.y ) {
+      if ( tmax.x < tmax.z ) {
+	if ( a_Distance < tmax.x ) break;
+	X = X + stepX;
+	if ( X == outX ) break;
+	tmax.x += tdelta.x;
+      }
+      else {
+	if ( a_Distance < tmax.z ) break;
+	Z = Z + stepZ;
+	if ( Z == outZ ) break;
+	tmax.z += tdelta.z;
+      }
+    }
+    else {
+      if ( tmax.y < tmax.z ) {
+	if ( a_Distance < tmax.y ) break;
+	Y = Y + stepY;
+	if ( Y == outY ) break;
+	tmax.y += tdelta.y;
+      }
+      else {
+	if ( a_Distance < tmax.z ) break;
+	Z = Z + stepZ;
+	if ( Z == outZ ) break;
+	tmax.z += tdelta.z;
+      }
+    }
+  }
+  return retval;
+}
+
+bool UniformGrid::findFirstIntersection( const TRay &a_Ray, const float a_MaxDist2,
+					 TObject *&a_Obj ) const {
+  bool retval = false;
+  // setup 3DDDA (double check reusability of primary ray data)
+  TVector3 cb, tmax, tdelta, cell;
+  cell = (a_Ray.origin - m_Extends.m_Min) * m_SR;
+  int stepX, outX, X = (int)cell.x;
+  int stepY, outY, Y = (int)cell.y;
+  int stepZ, outZ, Z = (int)cell.z;
+#ifdef __DEBUG__
+  printf("UniformGrid::findFirstIntersection\n");
+  a_Ray.origin.print("ray origin: ");
+  a_Ray.direction.print("ray direction: ");
+  cell.print("cell: ");
+  printf("X: %d  Y: %d  Z: %d\n", X, Y, Z ); fflush(stdout);
+#endif
+  if ((X < 0) || (X >= m_GridSize) || (Y < 0) || (Y >= m_GridSize) || (Z < 0) || (Z >= m_GridSize))
+    return false;
+  if ( a_Ray.direction.x > 0 ) {
+    stepX = 1, outX = m_GridSize;
+    cb.x = m_Extends.m_Min.x + (X + 1) * m_CW.x;
+  }
+  else {
+    stepX = -1, outX = -1;
+    cb.x = m_Extends.m_Min.x + X * m_CW.x;
+  }
+  if ( a_Ray.direction.y > 0.0f ) {
+    stepY = 1, outY = m_GridSize;
+    cb.y = m_Extends.m_Min.y + (Y + 1) * m_CW.y; 
+  }
+  else {
+    stepY = -1, outY = -1;
+    cb.y = m_Extends.m_Min.y + Y * m_CW.y;
+  }
+  if ( a_Ray.direction.z > 0.0f ) {
+    stepZ = 1, outZ = m_GridSize;
+    cb.z = m_Extends.m_Min.z + (Z + 1) * m_CW.z;
+  }
+  else {
+    stepZ = -1, outZ = -1;
+    cb.z = m_Extends.m_Min.z + Z * m_CW.z;
+  }
+#ifdef __DEBUG__
+  printf("stepX [%d]  stepY [%d]  stepZ [%d]\n", stepX, stepY, stepZ ); fflush(stdout);
+  printf("outX [%d]  outY [%d]  outZ [%d]\n", outX, outY, outZ ); fflush(stdout);
+  cb.print("cb: "); fflush(stdout);
+#endif
+  if ( a_Ray.direction.x != 0 ) {
+    tmax.x = (cb.x - a_Ray.origin.x) * a_Ray.reverseDirection.x;
+    tdelta.x = m_CW.x * stepX * a_Ray.reverseDirection.x;
+  }
+  else tmax.x = INFINITE;
+  if ( a_Ray.direction.y != 0 ) {
+    tmax.y = (cb.y - a_Ray.origin.y) * a_Ray.reverseDirection.y;
+    tdelta.y = m_CW.y * stepY * a_Ray.reverseDirection.y;
+  }
+  else tmax.y = INFINITE;
+  if ( a_Ray.direction.z != 0 ) {
+    tmax.z = (cb.z - a_Ray.origin.z) * a_Ray.reverseDirection.z;
+    tdelta.z = m_CW.z * stepZ * a_Ray.reverseDirection.z;
+  }
+  else tmax.z = INFINITE;
+#ifdef __DEBUG__
+  tmax.print("tmax: "); fflush(stdout);
+  tdelta.print("tdelta: "); fflush(stdout);
+#endif
+  // start stepping
+  //--  vector<TObject*> *list = NULL;
+  ObjectList *list = NULL;
+  a_Obj = NULL;
+  // trace primary ray
+  while (1) {
+    //--    list = &m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+    list = m_Grid[X + (Y << m_GridShift) + (Z << (m_GridShift * 2))];
+#ifdef __DEBUG__
+    printf("first while\n");
+    printf("X:[%d]  Y:[%d]  Z:[%d] -> idx: %d  [%x]\n",
+	   X, Y, Z, X + (Y << m_GridShift) + (Z << (m_GridShift * 2)), (int)list );
+#endif
+    //--    for ( vector<TObject *>::const_iterator iterO = list->begin();
+    //--	  iterO != list->end();
+    //--	  iterO++ ) {
+    while ( list != NULL ) {
+      //--      TObject *obj = (*iterO);
+      TObject *obj = list->m_Object;
+      TPrimitive *prim = obj->primitive;
+      bool result;
+      if ( prim->rayId != a_Ray.rayId ) {
+#ifdef __DEBUG__
+	prim->print("testing intersection with prim: ");
+#endif
+	prim->rayId = a_Ray.rayId; // assign ray id to primitive
+	if ( result = prim->intersectsRay( a_Ray, a_MaxDist2 ) ) {
+	  a_Obj = obj;
+	  return true;
+	}
+      }
+      list = list->m_Next;
+    }
+    if ( tmax.x < tmax.y ) {
+      if ( tmax.x < tmax.z ) {
+	X = X + stepX;
+	if ( X == outX ) return false;
+	tmax.x += tdelta.x;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+    else {
+      if ( tmax.y < tmax.z ) {
+	Y = Y + stepY;
+	if ( Y == outY ) return false;
+	tmax.y += tdelta.y;
+      }
+      else {
+	Z = Z + stepZ;
+	if ( Z == outZ ) return false;
+	tmax.z += tdelta.z;
+      }
+    }
+  }
+  return false;
+}
+
+void UniformGrid::print( const char *msg ) const {
+  printf("%s\n", msg );
+  m_Extends.print("extends");
+  printf("gridSize: %3d  gridShift: %3d\n", m_GridSize, m_GridShift );
+  m_SR.print("SR: ");
+  m_CW.print("CW: ");
+  for ( int x = 0; x < m_GridSize; x++ )
+    for ( int y = 0; y < m_GridSize; y++ )
+      for ( int z = 0; z < m_GridSize; z++ ) {
+	int idx = x + ( y * m_GridSize ) + ( z * m_GridSize * m_GridSize );
+	//--	vector<TObject*> *list = &m_Grid[idx];
+	ObjectList *list = m_Grid[idx];
+	//--	if ( list->size() > 0 )
+	//--	printf("grid[%8d] (%2d, %2d, %2d) [%2d]\n",
+	//--	       idx, x, y, z, list->size() );
+	if ( list != NULL )
+	  printf("grid[%8d] (%2d, %2d, %2d)\n",
+		 idx, x, y, z );
+//--	for ( vector<TObject *>::const_iterator iterO = list->begin();
+//--	      iterO != list->end();
+//--	      iterO++ )
+//--	  (*iterO)->print("object in cell");
+	while ( list != NULL ) {
+	  list->m_Object->print("object in cell:");
+	  list = list->m_Next;
+	}
+      }
+}

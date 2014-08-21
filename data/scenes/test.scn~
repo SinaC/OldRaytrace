@@ -1,0 +1,873 @@
+include 'colors.inc'
+include 'constants.inc'
+include 'granite.inc'
+
+//--------- TEXTURES ----------
+declare whiteTexture = texture {
+  pigment = pigment: solid { color = white; };
+  finish = finish {
+    ambient = 0.0;
+    diffuse = 1.0;
+  };
+};
+declare testTexture2 = texture {
+  pigment = pigment: solid { color = red; };
+  finish = finish {
+    ambient = 0.2;
+    diffuse = 0.8;
+    specular = 0.5;
+    roughness = 1.0/0.05;
+  };
+};
+declare testTexture = texture {
+  pigment = pigment: solid { color = white; };
+  finish = finish {
+    ambient = 0.0;
+    diffuse = 0.2;
+    transmission = 0.8;
+  };
+  interior = interior {
+    ior = 1.45;
+  };
+};
+
+//--------- CAMERA ----------
+declare camera1 = camera: classic {
+//  location = vector< -50, 80, -50 >;
+//  lookat = vector< 0, 50, 0 >;
+
+//-- zoom on sphere
+//--  location = vector< -50, 1.37610, -50 >;
+//--  lookat = vector< 0, 5, 0 >;
+//--  fov = 5;
+
+//-- zoom on sor
+//--  location = vector< -1, 1.5, 1 >;
+//--  lookat = vector< 0, 0.5, 0 >;
+//--  fov = 60;
+
+//-- zoom on meta1
+  location = vector< 0.00000, 20, -30.00000 >;
+  lookat = vector< 0.00000, 20, 0.00000 >;
+};
+
+declare camera2 = camera: classic {
+  location = vector< 0, 60, -60 >;
+  lookat = vector< 0, 30, 0 >;
+};
+
+declare camera3 = camera: classic {
+  location = vector< 0, 500, 00 >;
+  lookat = vector< 10, 0, 10 >;
+};
+
+declare camera4 = camera: perspective {
+  location = vector< 0.00000, 20, -30.00000 >;
+  lookat = vector< 0.00000, 20, 0.00000 >;
+};
+
+declare camera5 = camera: classic {
+  location = vector< 0.00000, 10, -30.00000 >;
+  lookat = vector< 0.00000, 0, 0.00000 >;
+};
+
+declare camera6 = camera: classic {
+  location = vector< 0, 60, -60 >;
+  lookat = vector< 0, 90, 0 >;
+};
+
+//--------- LIGHT ----------
+declare dot1 = light: dot {
+  location = vector< 0, 150, -100 >;
+  color = white;
+  attenuation = true;
+};
+
+declare dot2 = light: dot {
+  location = vector< -150, 150, 0 >;
+  color = yellow;
+  attenuation = true;
+};
+
+declare lightCyl = light: dot {
+  location = vector< 150, 150, 0 >;
+  color = yellow;
+  attenuation = false;
+  volume = primitive: cylinder {
+     center = vector< 150, 150, 0 >;
+     axis = center - vector< 0, 20, 0 >;
+     radius = 15;
+  };
+};
+
+declare square1 = light: square {
+  location = vector< -50, 100, 0 >;
+  direction = vector< 0, -1, 0 >;
+  axis = [[ vector< 50, 0, 0 >, vector< 0, 0, 1 > ]];
+  numDots = [[ 5, 5 ]];
+//    jitter = false;
+  color = white;
+};
+
+//--------- OBJECT ----------
+
+declare plane1 = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -15;
+  };
+//--  bounding = bounding: aabb {
+//--    min = vector< -50, -15.1, -50 >;
+//--    max = vector< 50, -14.9, 50 >;
+//--  };
+  texture = texture {
+    pigment = pigment: checker { 
+      white = green;
+      black = yellow;
+      size = vector< 20, 20, 20 >;
+      simple = yellow;
+    };
+//    pigment = pigment: solid { color = white; };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.5;
+      //reflection = 0.4;
+    };
+  };
+};
+
+declare plane2 = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -15;
+  };
+  texture = texture {
+    pigment = pigment: planar  {
+        //map = bitmap { pcx = 'parqfloorbump.pcx'; };
+	map = bitmap { bmp = 'water.bmp'; };
+	simple = blue;
+    };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.5;
+      reflection = 0.4;
+      transmission = 0.5;
+    };
+    interior = interior {
+      ior = 1.45;
+    };
+    normal = normal: bumps { bumps = 0.1; };
+  };
+};
+
+declare plane3 = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -15;
+  };
+  texture = texture {
+    pigment = pigment: planar  {
+        //--map = bitmap { pcx = 'parqfloorbump.pcx'; };
+	map = bitmap { pcx = 'walls.pcx'; };
+	simple = white;
+    };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.5;
+    };
+  };
+};
+
+declare sphere1 = object {
+  primitive = primitive: sphere {
+    center = vector< 0, 0, 0 >;
+    radius = 10;
+  };
+  texture = texture {
+    //pigment = pigment: spherical {
+    //  map = bitmap { bmp = 'reflectionmirror.bmp'; };
+    //  simple = red;
+    //};
+    pigment = pigment: solid { color = white; };
+    finish = finish {
+//      ambient = 0.1;
+//      diffuse = 0.2;
+////      phong = 0.2;
+////      phongSize = 10.0;
+//      specular = 0.5;
+//      roughness = 1.0/0.0085;
+      reflection = 1.0;
+      transmission = 1.0;
+
+      ambient = 0.0;
+      diffuse = 0.0;
+    };
+    interior = interior {
+      ior = 1.45;
+      absorption = rgb<0.0,0.0,1.0>;
+    };
+  };
+};
+
+//declare walls = bitmap { pcx = 'wall.pcx'; };
+declare walls = bitmap { pcx = 'walls.pcx'; };
+
+declare box1 = object {
+  primitive = primitive: box {
+    min = vector< -5, 40, -20 >;
+    max = vector< 25, 70, 20 >;
+  };
+  texture = texture {
+    pigment = pigment: cubemap {
+      anchor = vector< 10, 55, 0 >; // middle of box
+      maps = [[ walls, walls, walls, walls, walls, walls ]];
+      simple = lightGray;
+    };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.8;
+    };
+  };
+};
+
+declare julia1 = object {
+  primitive = primitive: julia {
+    type = 'quaternion';
+    subtype = 'sqr';
+    param = vector4< -0.083, 0.0, 0.83, 0.025 >;
+    precision = 1.0 / 15.0;
+    n = 8;
+  };
+  texture = texture {
+    pigment = pigment: solid { color = white; };
+    finish = finish {
+      ambient = 0.1;
+      diffuse = 0.2;
+      transmission = 1.0;
+      reflection = 0.8;
+    };
+    interior = interior {
+      ior = 1.45;
+      //absorption = rgb< 1.0, 1.0, 0.0>;
+    };
+  };
+};
+
+declare box2 = object {
+  primitive = box1.primitive;
+  texture = julia1.texture;
+};
+
+declare quadric1 = object {
+  primitive = primitive: quadric {
+    center = vector<0,0,0>;
+    radius = 10.0;
+// y-axis cylinder
+//    matrix = [[ [[ 1, 0, 0 ]],
+//                [[ 0, 0, 0 ]],
+//                [[ 0, 0, 1 ]] ]];
+// ellipsoid
+    matrix = [[ [[ 0.4, 0, 0 ]],
+                [[ 0, 0.5, 0 ]],
+                [[ 0, 0, 0.3 ]] ]];
+  };
+  texture = julia1.texture;
+};
+
+declare torus1 = object {
+  primitive = primitive: torus {
+     radius1 = 20;
+     radius2 = 10;
+  };
+  texture = julia1.texture;
+};
+
+declare transformed1 = object {
+  primitive = primitive: transformed {
+    primitive = box1.primitive;
+    //primitive = torus1.primitive;
+    //scale = vector< 1, 0.5, 1 >;
+    rotate = vector< 30, 45, 60 >;
+    translate = vector< 0, 40, 0 >;
+  };
+  texture = julia1.texture;
+};
+
+declare csg1 = object {
+  primitive = primitive: csg {
+    operation = 'union';
+    primitives = [[ 
+                    primitive: sphere {
+                      center = vector<0,0,0>;
+                      radius = 17.5;
+                    },
+                    primitive: csg {
+                      operation = 'difference';
+                      primitives = [[
+                                      [[ primitive: box {
+                                           min = vector<-15,-15,-15>;
+                                           max = vector<15,15,15>;
+                                         }, false ]],
+                                      [[ primitive: box {
+                                           min = vector<-15.1,-12.5,-12.5>;
+                                           max = vector<15.1,12.5,12.5>;
+                                         }, true ]],
+                                      [[ primitive: box {
+                                           min = vector<-12.5,-15.1,-12.5>;
+                                           max = vector<12.5,15.1,12.5>;
+                                         }, true ]],
+                                      [[ primitive: box {
+                                           min = vector<-12.5,-12.5,-15.1>;
+                                           max = vector<12.5,12.5,15.1>;
+                                         }, true ]]
+                                   ]];
+                    } ]];
+  };
+  texture = texture {
+//    pigment = pigment: solid { color = white; };
+    pigment = pigment: granite {
+      map = graniteMap;
+      simple = rgb< 0.690196, 0.627451, 0.627451 >;
+    };
+    finish = finish {
+      ambient = 0.15;
+      diffuse = 0.6;
+      specular = 0.75;
+      roughness = 1.0/0.0085;
+      reflection = 0.5;
+      transmission = 0.5;
+    };
+    interior = interior {
+      ior = 1.45;
+    };
+  };
+};
+
+declare csg2 = object {
+  primitive = primitive: csg {
+    operation = 'merge';
+    primitives = [[
+                    [[ primitive: sphere {
+                         center = vector< 15, 50, 0 >;
+                         radius = 25;
+                       }, true ]],
+
+                    [[ primitive: capsule {
+                         p1 = vector< 0, 70, 10 >;
+                         p2 = vector< -12, 30, 10 >;
+                         radius = 15;
+                       }, true ]],
+
+                    [[ primitive: cylinder {
+                         center = vector< -40, 50, 10 >;
+                         axis = vector< 0, 1, 0 >;
+                         height = 50;
+                         radius = 15;
+                       }, true ]],
+
+                    [[ primitive: box {
+                         min = vector< -50, 25, -15 >;
+                         max = vector< 70, 50, 15 >;
+                       }, false ]]
+                 ]];
+  };
+  texture = testTexture;
+};
+
+declare meta1 = object {
+  primitive = primitive: meta {
+    threshold = 0.5;
+    meta = [[
+//              meta: sphere { location = vector< -10, 0, -10 >; strength = 14; },
+//              meta: sphere { location = vector< 0, 0, 0 >; strength = 14; },
+//              meta: sphere { location = vector< 8, 0, 8 >; strength = 14; },
+//              meta: sphere { location = vector< 0, 8, 0 >; strength = 14; }
+
+//              meta: sphere { location = vector< -10, 20, -10 >; strength = 10; },
+//              meta: sphere { location = vector< 10, 20, -10 >; strength = 10; }
+		meta: sphere { location = vector<0, 20, -10>; strength = 10; }
+           ]];
+  };
+  texture = texture {
+    finish = finish {
+//      ambient = 0.2;
+//      diffuse = 0.8;
+//      phong = 1.0;
+//      phongSize = 4.0;
+      ambient = 0.0;
+      diffuse = 1.0;
+      transmission = 0.9;
+//      reflection = 0.5;
+    };
+//--    pigment = pigment: spherical {
+//--      anchor = vector< -0.5, 21.25, -0.5 >;
+//--      map = bitmap { bmp = 'reflectionmirror.bmp'; };
+//--    };
+//    pigment = pigment: solid { color = bronze2; };
+    pigment = pigment: solid { color = white; };
+//--    normal = normal: bumps { bumps = 0.5; };
+
+//--    normal = normal: turbulence { // equivalent to previous bumps
+//--      factor = 0.5;
+//--      turbulence = turbulence: noise {
+//--        octaves = 1;
+//--      };
+//--    };
+
+    interior = interior {
+      ior = 1.45;
+    };
+  };
+};
+
+declare meta2 = object {
+  primitive = primitive: meta {
+    threshold = 0.5;
+    meta = [[
+              meta: sphere { location = vector< -10, 20, -10 >; strength = 10; },
+              meta: sphere { location = vector< 10, 20, -10 >; strength = 10; }
+//              meta: sphere { location = vector< 0, 20, 0 >; strength = 10; },
+//              meta: sphere { location = vector< 8, 20, 8 >; strength = 10; },
+//              meta: sphere { location = vector< 0, 25, 0 >; strength = 10; }
+           ]];
+  };
+  texture = texture {
+    finish = finish {
+//      ambient = 0.2;
+//      diffuse = 0.8;
+//      phong = 1.0;
+//      phongSize = 4.0;
+      ambient = 0.0;
+      diffuse = 0.2;
+      transmission = 0.9;
+    };
+//--    pigment = pigment: spherical {
+//--      anchor = vector< -0.5, 21.25, -0.5 >;
+//--      map = bitmap { bmp = 'reflectionmirror.bmp'; };
+//--    };
+//--    pigment = pigment: solid { color = bronze2; };
+    pigment = pigment: solid { color = white; };
+//--    normal = normal: bumps { bumps = 0.5; };
+
+//--    normal = normal: turbulence { // equivalent to previous bumps
+//--      factor = 0.5;
+//--      turbulence = turbulence: noise {
+//--        octaves = 1;
+//--      };
+//--    };
+    interior = interior {
+      ior = 1.45;
+    };
+  };
+};
+
+declare cylinder1 = object {
+  primitive = primitive: cylinder {
+     center = vector< -40, 50, 10 >;
+     axis = vector< 0, 1, 0 >;
+     height = 50;
+     radius = 15;
+  };
+  texture = testTexture;
+};
+
+declare capsule1 = object {
+  primitive = primitive: capsule {
+     p1 = vector< -15, 10, 10 >;
+     p2 = vector< 30, 50, 20 >;
+     radius = 15;
+  };
+  texture = testTexture;
+};
+
+declare blob1 = object {
+  primitive = primitive: blob {
+    threshold = 0.5;
+    blobs = [[
+//              blob: sphere { origin = vector< 0, 0, 10 >; strength = 10; radius2 = 100; }
+//              ,blob: sphere { origin = vector< -10, 20, -10 >; strength = 10; radius2 = 100; }
+//              ,blob: sphere { origin = vector< 0, 20, 0 >; strength = 10; radius2 = 100; }
+//              ,blob: sphere { origin = vector< 8, 20, 8 >; strength = 10; radius2 = 100; }
+//              ,blob: sphere { origin = vector< 0, 25, 0 >; strength = 10; radius2 = 100; }
+              blob: cylinder { origin = vector< 0, 0, 0 >; length = 20; strength = 10; radius2 = 100; }
+           ]];
+  };
+//  texture = whiteTexture;
+  texture = testTexture;
+};
+
+declare super1 = object {
+  primitive = primitive: superellipsoid {
+//    e = 0.5;
+//    n = 0.5;
+    e = 3.0;
+    n = 1.0;
+  };
+  texture = whiteTexture;
+};
+
+declare scaleR = 1.0;
+declare scaleH = 1.0;
+declare sor1 = object {
+  primitive = primitive: sor {
+    points = [[
+//                vector2<0.000000*scaleR, 0.000000*scaleH>,
+//                vector2<1.18143*scaleR, 1.000000*scaleH>,
+//                vector2<6.20253*scaleR, 5.40084*scaleH>,
+//                vector2<2.10970*scaleR, 8.27004*scaleH>,
+//                vector2<1.94093*scaleR, 9.62025*scaleH>,
+//                vector2<2.86920*scaleR, 10.00000*scaleH>,
+//                vector2<4.68354*scaleR, 10.033755*scaleH>
+
+  vector2<0.517241379, -0.132625995>,
+  vector2<0.249336870, 0.000000>,
+  vector2<0.068965517, 0.031830239>,
+  vector2<0.021220159, 0.050397878>,
+  vector2<0.058355438, 0.347480106>,
+  vector2<0.132625995, 0.381962865>,
+  vector2<0.196286472, 0.464190981>,
+  vector2<0.238726790, 0.602122016>,
+  vector2<0.249336870, 0.721485411>,
+  vector2<0.233421751, 0.864721485>,
+  vector2<0.167108753, 1.000000000>,
+  vector2<0.084880637, 1.055702918>
+             ]];
+  };
+  texture = texture {
+    finish = finish {
+      ambient = 0.25;
+      diffuse = 0.60;
+      reflection = 0.45;
+      phong = 1.0;
+      phongSize = 100.0;
+    };
+    pigment = pigment: solid { color = rgb< 0.94, 0.93, 0.86 >; };
+  };
+};
+
+declare heart1 = object {
+  primitive = primitive: heart {
+    center = vector< 0, 10, 0 >;
+    radius = 20;
+    step = 2;
+    refinement = 12;
+  };
+  texture = testTexture;
+};
+
+declare sphere10 = object {
+  primitive = primitive: sphere {
+    center = vector< 0, 20, 0 >;
+    radius = 10;
+  };
+  texture = texture {
+    //pigment = pigment: solid { color = white; };
+    pigment = pigment: solid { color = blue; };
+    finish = finish {
+      transmission = 1.0;
+
+      ambient = 0.0;
+      diffuse = 0.0;
+    };
+    interior = interior {
+      ior = 1.45;
+      //absorption = rgb<0.0,0.0,1.0>;
+    };
+  };
+};
+
+declare sphere11 = object {
+  primitive = primitive: sphere {
+    center = vector< 0, 20, 0 >;
+    radius = 5;
+  };
+  texture = texture {
+    pigment = pigment: solid { color = white; };
+    //pigment = pigment: solid { color = blue; };
+    finish = finish {
+      transmission = 1.0;
+      //reflection = 1.0;
+
+      ambient = 0.0;
+      diffuse = 0.0;
+    };
+    interior = interior {
+      ior = 1.54;
+      //absorption = rgb<1.0,0.0,0.0>;
+    };
+  };
+};
+
+declare transformed2 = object {
+  primitive = primitive: transformed {
+    primitive = csg1.primitive;
+    rotate = vector< 30, 45, 60 >;
+    translate = vector< 0, 40, 0 >;
+  };
+  texture = csg1.texture;
+};
+
+//--------- ANIMATOR ----------
+declare camera2Mover = mover: circle {
+  dest = [[ camera2.location, camera6.location ]];
+  source = camera2.location;
+  axis = vector< 0, 1, 0 >;
+  speed = 0.25;
+};
+
+declare camera3LocationMover = mover: bezier {
+  segments = [[ [[ camera3.location, vector<0,0,1>, 5.0 ]],
+                [[ vector<40,0,-40>, vector<0,0,1>, 2.0 ]],
+                [[ vector<40,40,-40>, vector<0,0,1>, 3.0 ]],
+                [[ vector<40,80,-40>, vector<0,0,1>, 6.0 ]] ]];
+  dest = [[ camera3.location ]];
+};
+declare camera3LookatMover = mover: bezier {
+  segments = [[ [[ camera3.lookat, vector<0,0,1>, 5.0 ]],
+                [[ vector<10,10,0>, vector<0,0,1>, 2.0 ]] ]];
+  dest = [[ camera3.lookat ]];
+};
+
+//declare meta1Mover = mover: lissajou {
+//  pulse = vector< 0.5, 0.4, 0.3 >;
+//  phase = vector< 0, 0, 0 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = meta1.primitive.meta[0].location;
+//  dest = [[ meta1.primitive.meta[0].location ]];
+//};
+//declare meta2Mover = mover: lissajou {
+//  pulse = vector< 0.3, 0.4, 0.5 >;
+//  phase = vector< 1, 1, 1 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = meta1.primitive.meta[1].location;
+//  dest = [[ meta1.primitive.meta[1].location ]];
+//};
+//declare meta3Mover = mover: lissajou {
+//  pulse = vector< 0.5, 0.2, 0.3 >;
+//  phase = vector< 2, 2, 2 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = meta1.primitive.meta[2].location;
+//  dest = [[ meta1.primitive.meta[2].location ]];
+//};
+//declare meta4Mover = mover: lissajou {
+//  pulse = vector< 0.3, 0.4, 0.3 >;
+//  phase = vector< 3, 3, 3 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = meta1.primitive.meta[3].location;
+//  dest = [[ meta1.primitive.meta[3].location ]];
+//};
+
+declare blob1Mover = mover: lissajou {
+  pulse = vector< 0.3, 0.4, 0.3 >;
+  phase = vector< 0, 0, 0 >;
+  amplitude = vector< 7, 7, 7 >;
+  shift = blob1.primitive.blobs[0].origin;
+  dest = [[ blob1.primitive.blobs[0].origin ]];
+};
+//declare blob2Mover = mover: lissajou {
+//  pulse = vector< 0.3, 0.4, 0.5 >;
+//  phase = vector< 1, 1, 1 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = blob1.primitive.blobs[1].origin;
+//  dest = [[ blob1.primitive.blobs[1].origin ]];
+//};
+//declare blob3Mover = mover: lissajou {
+//  pulse = vector< 0.5, 0.2, 0.3 >;
+//  phase = vector< 2, 2, 2 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = blob1.primitive.blobs[2].origin;
+//  dest = [[ blob1.primitive.blobs[2].origin ]];
+//};
+//declare blob4Mover = mover: lissajou {
+//  pulse = vector< 0.3, 0.4, 0.3 >;
+//  phase = vector< 3, 3, 3 >;
+//  amplitude = vector< 7, 7, 7 >;
+//  shift = blob1.primitive.blobs[3].origin;
+//  dest = [[ blob1.primitive.blobs[3].origin ]];
+//};
+
+//--MOVER--declare testMover1 = mover: addv {
+//--MOVER--  source = [[ meta1.primitive.meta[0].location, meta1.primitive.meta[1].location,
+//--MOVER--              meta1.primitive.meta[2].location, meta1.primitive.meta[3].location,
+//--MOVER--              vector< 0, -60, 0 > ]];
+//--MOVER--  dest = [[ meta1.texture.pigment.anchor ]];
+//--MOVER--};
+
+declare testMover2 = mover: circle {
+  dest = [[ sphere1.primitive.center, sphere1.texture.pigment.anchor ]];
+  source = sphere1.primitive.center;
+  axis = vector< 0, 1, 0 >;
+  speed = 0.25;
+};
+
+declare testMover3 = mover: bounce {
+  gravity = 9.81;
+  speed = 0.5;
+  height = 40;
+  dest = [[ plane1.primitive.distance ]];
+};
+
+declare animator1 = animator {
+  movers = [[ camera2Mover,
+              camera3LocationMover, camera3LookatMover ]];
+//           + [[   meta1Mover, meta2Mover, meta3Mover, meta4Mover ]];
+//           + [[ blob1Mover ]];
+//           + [[ blob1Mover, blob2Mover, blob3Mover, blob4Mover ]];
+//           + [[ testMover1, testMover2, testMover3 ]];
+  speed = 0.3;
+};
+
+//--------- AMBIENT ----------
+declare ambient1 = ambient: solid { color = white; };
+
+declare hemi1 = ambient: hemispherical {
+  center = vector< 0, 50, 0 >;
+  up = vector< 0, 1, 0 >;
+  colortop = blue;
+  colorbottom = red;
+};
+
+//--------- ATMOSPHERIC ----------
+declare fog1 = atmospheric: fog {
+  density = 1.0/20.0;
+  color = LightSteelBlue;
+  filter = 0.5;
+  turbulence = turbulence: noise {
+    turbulence = vector<0.5,0.15,-0.20>;
+    octaves = 6;
+    lambda = 2.0;
+    omega = 0.5;
+  };
+  depth = 0.5; // USE WITH TURBULENCE
+};
+
+declare ground1 = atmospheric: ground {
+  density = 1.0/2.0;
+//  color = LightSteelBlue;
+  color = red;
+  filter = 0.5;
+  offset = -15.0;
+  altitude = 10.0;
+  up = vector<0,1,0>;
+//  turbulence = turbulence: noise {
+//    turbulence = vector<0.05,0.05,-0.05>;
+//    octaves = 6;
+//    lambda = 2.0;
+//    omega = 0.5;
+//  };
+//  depth = 0.5;
+};
+
+//--------- BACKGROUND ----------
+declare sky1 = pigment: skymap {
+  map = bitmap { pcx = 'ciel.pcx'; };
+};
+
+declare back1 = pigment: skymap {
+  map = bitmap { bmp = 'background.bmp'; };
+};
+
+
+declare backcube1 = pigment: cubemap {
+  anchor = vector< 0, 0, 0 >;
+  //maps = [[ walls, walls, walls, walls, walls, walls ]];
+  // right, left, up, down, front, back
+  maps = [[
+    bitmap { tga = 'alpright.tga'; },
+    bitmap { tga = 'alpleft.tga'; },
+    bitmap { tga = 'alpup.tga'; },
+    bitmap { tga = 'alpdown.tga'; },
+    bitmap { tga = 'alpforward.tga'; },
+    bitmap { tga = 'alpback.tga'; }
+  ]];  
+  simple = lightGray;
+};
+
+//--------------------------
+//--------- WORLD ----------
+//--------------------------
+world {
+//  objects = [[ plane1, sphere1, box1 ]];
+//  objects = [[ plane1, box2 ]];
+//  objects = [[ plane1, sphere1 ]];
+//  objects = [[ plane1, julia1 ]];
+//  objects = [[ plane1, torus1 ]];
+//  objects = [[ plane1, quadric1 ]];
+//  objects = [[ plane1, transformed1 ]];
+//  objects = [[ plane3, csg1 ]];
+//  objects = [[ plane1, csg2 ]];
+//  objects = [[ plane1, meta1 ]];
+//  objects = [[ plane1, cylinder1 ]];
+//  objects = [[ plane1, capsule1 ]];
+//  objects = [[ plane1, blob1 ]];
+//  objects = [[ plane1, super1 ]];
+//  objects = [[ plane1, sor1 ]];
+//  objects = [[ plane1, heart1 ]];
+
+//  objects = [[ plane2, sphere1, box1 ]];
+//  objects = [[ plane1, csg2 ]];
+//  objects = [[ csg1 ]];
+//  objects = [[ sphere10, sphere11 ]];
+//  objects = [[ meta1 ]];
+//  objects = [[ blob1 ]];
+//  objects = [[ plane1, transformed2 ]];
+  objects = [[ sphere12 ]];
+
+  cameras = [[ camera1, camera2, camera3, camera6 ]];
+
+  currentCamera = cameras[0];
+
+  lights = [[ dot1 ]];
+//  lights = [[ dot1, dot2 ]];
+//  lights = [[ dot1, lightCyl ]];
+//  lights = [[ square1 ]];
+
+  ambient = ambient1;
+//  ambient = hemi1;
+
+  atmospheric = fog1;
+//  atmospheric = ground1;
+
+//  background = sky1;
+//  background = back1;
+  background = backcube1;
+
+  animator = animator1;
+}
+
+//--------------------------
+//-------- SETTING ---------
+//--------------------------
+settings {
+  maxReflectionDepth = 4;
+  maxTransmissionDepth = 4;
+
+  shading = true; // F1
+  shadow = true; // F2
+  shadowCache = false; // F6
+  diffuse = true; // F9
+  ambient = true; // F11
+  reflection = false; // F3
+  transmission = false; // F4
+  atmospheric = false; // F5
+
+  rendering = 'normal';
+//--  rendering = 'bilinear';
+//--  rendering = 'interpolated';
+
+  screenshot = 'quincunx'; // F8
+//--  screenshot = 'adaptative_primitive';
+//--  screenshot = 'interpolated';
+//--  screenshot = 'normal';
+
+  mouse = true;
+
+//--  moveStep = 0.5f;
+  moveStep = 5.0f;
+
+  width = 320;
+  height = 200;
+
+  screenshotWidth = 640;
+  screenshotHeight = 480;
+}

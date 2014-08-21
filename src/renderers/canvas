@@ -1,0 +1,36 @@
+
+//--CANVAS--bool TWorld::renderCanvas( u32 *surface, const u32 width, const u32 height ) const {
+//--CANVAS--  if ( currentCamera == NULL ) {
+//--CANVAS--    printf("Current camera INVALID\n");
+//--CANVAS--    return false;
+//--CANVAS--  }
+//--CANVAS--
+//--CANVAS--  TRay ray;
+//--CANVAS--  ray.origin = currentCamera->location;
+//--CANVAS--
+//--CANVAS--  float widthCamera = tanf(rads(currentCamera->fov*0.5f));
+//--CANVAS--  float heightCamera = widthCamera * (float)height / (float)width;
+//--CANVAS--
+//--CANVAS--  TVector3 topLeft = currentCamera->N
+//--CANVAS--    + (currentCamera->V * heightCamera)
+//--CANVAS--    - (currentCamera->U * widthCamera);
+//--CANVAS--  TVector3 rightStep = currentCamera->U * (widthCamera + widthCamera) / (float)width;
+//--CANVAS--  TVector3 upStep = currentCamera->V * (heightCamera + heightCamera) / (float)height;
+//--CANVAS--
+//--CANVAS--  u32 *dest = surface;
+//--CANVAS--  for ( u32 y = 0; y < height; y++ ) {
+//--CANVAS--    TVector3 yScanline = topLeft - ( upStep * (float)y );
+//--CANVAS--    for ( u32 x = 0; x < width; x++ ) {
+//--CANVAS--
+//--CANVAS--      ray.clear();
+//--CANVAS--      ray.direction = yScanline; ray.direction.normalize();
+//--CANVAS--      yScanline += rightStep;
+//--CANVAS--
+//--CANVAS--      TColor dotColor = traceRay( ray, 1.0f );
+//--CANVAS--
+//--CANVAS--      *(dest++) = clampRGB32( dotColor );
+//--CANVAS--    }
+//--CANVAS--  }
+//--CANVAS--
+//--CANVAS--  return true;
+//--CANVAS--}

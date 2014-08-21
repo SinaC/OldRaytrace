@@ -1,0 +1,154 @@
+include 'colors.inc'
+
+//--------- CONSTANTS ---------
+declare lightXStart = -25.0;
+declare lightXEnd = 25.0;
+declare lightXStep = (lightXEnd - lightXStart) / 10.0;
+declare lightX = (lightXEnd + lightXStart) * 0.5;
+declare lightY = 75.0;
+declare lightZ = 0.0;
+
+//--------- CAMERA ----------
+declare camera1 = camera: classic {
+  location = vector< -50, 80, -50 >;
+  lookat = vector< 0, 0, 0 >;
+};
+
+//--------- LIGHT ----------
+declare square1 = light: square {
+  location = vector< lightX, lightY, lightZ >;
+  direction = vector< 0, -1, 0 >;
+  axis = [[ vector< lightXEnd-lightXStart, 0, 0 >, vector< 0, 0, 1 > ]];
+  numDots = [[ 10, 1 ]];
+  jitter = false;
+  color = white;
+};
+
+declare dot1 = light: dot {
+  location = vector< lightX - 5.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot2 = light: dot {
+  location = vector< lightX - 4.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot3 = light: dot {
+  location = vector< lightX - 3.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot4 = light: dot {
+  location = vector< lightX - 2.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot5 = light: dot {
+  location = vector< lightX - 1.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot6 = light: dot {
+  location = vector< lightX + 0.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot7 = light: dot {
+  location = vector< lightX + 1.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot8 = light: dot {
+  location = vector< lightX + 2.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot9 = light: dot {
+  location = vector< lightX + 3.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot10 = light: dot {
+  location = vector< lightX + 4.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+declare dot11 = light: dot {
+  location = vector< lightX + 5.0 * lightXStep, lightY, lightZ >;
+  color = white;
+  brightness = 1.0/11.0;
+};
+
+//--------- OBJECT ----------
+declare plane1 = object {
+  primitive = primitive: plane {
+    normal = vector< 0, 1, 0 >;
+    distance = -15;
+  };
+  texture = texture {
+    pigment = pigment: checker { 
+      white = green;
+      black = yellow;
+      size = vector<20,20,20>;
+    };
+    finish = finish {
+      ambient = 0.2;
+      diffuse = 0.5;
+      reflection = 0.4;
+      specular = 0.5;
+      roughness = 1.0/0.05;
+    };
+  };
+};
+
+declare sphere1 = object {
+  primitive = primitive: sphere {
+    center = vector< 0, 50, 0 >;
+    radius = 10;
+  };
+  texture = texture {
+    pigment = pigment: spherical {
+      anchor = vector< 10, 0, 0 >;
+      map = bitmap { bmp = 'reflectionmirror.bmp'; };
+    };
+    finish = finish {
+      ambient = 0.0;
+      diffuse = 0.7;
+      transmission = 0.5;
+    };
+    interior = interior {
+      ior = 1.45;
+    };
+  };
+};
+
+//--------------------------
+//--------- WORLD ----------
+//--------------------------
+world {
+  objects = [[ plane1, sphere1 ]];
+//  objects = [[ plane1 ]];
+
+  cameras = [[ camera1 ]];
+
+  currentCamera = cameras[0];
+
+  lights = [[ square1 ]];
+//  lights = [[ dot1, dot2, dot3, dot4, dot5, dot6, dot7, dot8, dot9, dot10, dot11 ]];
+}
+
+//--------------------------
+//-------- SETTING ---------
+//--------------------------
+settings {
+  maxReflectionDepth = 3;
+  maxTransmissionDepth = 6;
+  shading = true;
+  shadow = true;
+  reflection = false;
+  transmission = false;
+  atmospheric = false;
+  rendering = 'bilinear';
+  screenshot = 'quincunx';
+}

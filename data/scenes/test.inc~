@@ -1,0 +1,4 @@
+declare blue = rgb< 0, 0, 1 >;
+declare green = rgb< 0, 1, 0 >;
+declare red = rgb< 1, 0, 0 >;
+declare toto = green;

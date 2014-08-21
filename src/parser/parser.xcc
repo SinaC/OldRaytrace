@@ -1,0 +1,316 @@
+grammar {
+//*********
+//** Module
+
+  nonterminal RAYModule {
+    field instructions: RAYCommand*;
+  
+    rule: instructions;
+  }
+
+//***********
+//** Commands
+
+  nonterminal RAYCommand {
+    <aziz>
+       virtual void execute( Context &ctx ) const;
+    </aziz>
+  }
+
+  nonterminal RAYInclude: RAYCommand {
+     field filename: RAYStringLiteral;
+
+     rule: "RAY_INCLUDE" filename ;
+  }
+
+  nonterminal RAYDeclare: RAYCommand {
+     field ident: RAYIdentifier;
+     field defval: RAYExpression;
+
+     rule: "RAY_DECLARE" ident '=' defval ';' ;
+  }
+
+  nonterminal RAYWorld: RAYCommand {
+     field fields: RAYField*;
+
+     rule: "RAY_WORLD" '{' fields '}' ;
+  }
+
+  nonterminal RAYSettings: RAYCommand {
+     field fields: RAYField*;
+
+     rule: "RAY_SETTINGS" '{' fields '}' ;
+  }
+
+  nonterminal RAYField {
+    field fieldName: RAYIdentifier;
+    field value: RAYExpression;
+
+    rule: fieldName '=' value ';' ;
+  }
+//***************
+//** Instructions
+
+  // instructions are different than command
+  //  they are only used in RAYFunction
+  nonterminal RAYInstruction {
+    <aziz>
+       virtual void execute( Context &ctx ) const;
+    </aziz>
+  }
+
+  nonterminal RAYCompound: RAYInstruction {
+     field instr: RAYInstruction*;
+
+     rule: '{' instr '}';
+  }
+
+  nonterminal RAYExprInstr: RAYInstruction {
+     field expr: RAYExpression;
+
+     rule: expr ';';
+  }
+  
+  nonterminal RAYWhileInstr: RAYInstruction {
+    field body: RAYInstruction;
+    field cond: RAYExpression;
+
+    rule: "RAY_WHILE" '(' cond ')' body;
+  }
+
+  nonterminal RAYIfInstr: RAYInstruction {
+    field cond: RAYExpression;
+    field thenpart: RAYInstruction;
+    field elsepart: RAYInstruction;
+
+    rule pred=1001: "RAY_IF" '(' cond ')' thenpart; 
+    rule pred=1000: "RAY_IF" '(' cond ')' thenpart "RAY_ELSE" elsepart;
+  }
+
+  nonterminal RAYVarDecl: RAYInstruction {
+    field defval: RAYExpression;
+    field ident: RAYIdentifier;
+
+    rule: "RAY_VAR" ident ';';
+    rule: "RAY_VAR" ident '=' defval ';';
+  }
+
+//******************************
+//** Expression
+
+  nonterminal RAYExpression {
+    <aziz> 
+       virtual Value eval( Context &ctx ) const;
+    </aziz>
+
+    rule: '(' this ')';
+  }
+
+//---------------------
+//--Complex expressions
+
+  nonterminal RAYMethodCallExpr: RAYExpression {
+    field left:RAYExpression;
+    field ident:RAYIdentifier;
+    field params: RAYExpression*/ ',';
+
+    rule pred=0: left '.' ident '(' params ')';
+  }
+
+  nonterminal RAYFunction: RAYExpression {
+    field params: RAYIdentifier */ ',';
+    field body: RAYCompound;
+
+    rule: "RAY_FUNCTION" '(' params ')' body;
+  }
+
+  nonterminal RAYRecord: RAYExpression {
+    field handleName: RAYIdentifier;
+    field subHandleName: RAYIdentifier;
+    field fields: RAYField*;
+
+    rule pred=1: handleName '{' fields '}';
+    rule pred=1: handleName ':' subHandleName '{' fields '}';
+  }
+
+  nonterminal RAYCallExpr: RAYExpression {
+    field left: RAYIdentifier;
+    field params: RAYExpression*/ ',';
+
+    rule pred=5: left '(' params ')';
+  }
+
+  nonterminal RAYQualifyExpr: RAYExpression {
+    field left: RAYExpression;
+    field ident: RAYIdentifier;
+
+    rule pred=4: left '.' ident;
+  }
+
+//-------------------
+//--Basic expressions
+
+  nonterminal RAYIdentifier: RAYExpression {
+     <asis>
+      const char* image;
+     </asis>
+
+    <commit>
+       result->image=str_dup(rule[0].tok_image);
+     </commit>
+
+     rule: "RAY_IDENT";
+  }
+
+//  nonterminal RAYSuper: RAYExpression {
+  nonterminal RAYSuper: RAYIdentifier {
+     <asis>
+      const char* image;
+     </asis>
+
+    <commit>
+       result->image=str_dup(rule[0].tok_image);
+     </commit>
+
+     rule: "RAY_SUPER";
+  }
+
+  nonterminal RAYList: RAYExpression {
+    field elems: RAYExpression */ ',';
+    
+    rule: '[' '[' elems ']' ']' ;
+  }
+
+  nonterminal RAYVector2: RAYExpression {
+    field X: RAYExpression;
+    field Y: RAYExpression;
+    
+    rule: "RAY_VECTOR2" '<' X ',' Y '>' ;
+  }
+
+  nonterminal RAYVector3: RAYExpression {
+    field X: RAYExpression;
+    field Y: RAYExpression;
+    field Z: RAYExpression;
+    
+    rule: "RAY_VECTOR3" '<' X ',' Y ',' Z '>' ;
+  }
+
+  nonterminal RAYVector4: RAYExpression {
+    field X: RAYExpression;
+    field Y: RAYExpression;
+    field Z: RAYExpression;
+    field W: RAYExpression;
+    
+    rule: "RAY_VECTOR4" '<' X ',' Y ',' Z ',' W '>' ;
+  }
+
+  nonterminal RAYColorRGB: RAYExpression {
+    field R: RAYExpression;
+    field G: RAYExpression;
+    field B: RAYExpression;
+    
+    rule: "RAY_COLOR" '<' R ',' G ',' B '>' ;
+  }
+
+//-------------------------------------
+//--Unary, Binary and Ternary operators
+
+  nonterminal RAYUnaryExpr: RAYExpression {
+    field op: token;
+    field expr: RAYExpression;
+
+    rule pred=15: op='!' expr;
+    rule pred=15: op='-' expr;
+  }
+
+  nonterminal RAYBinaryExpr: RAYExpression {
+    field op: token;
+    field left: RAYExpression;
+    field right: RAYExpression;
+
+    rule pred= 7:            left op='[' right ']';
+    rule pred=10 assoc=left: left op='#' right; // cross product
+    rule pred=10 assoc=left: left op='|' right; // dot product
+    rule pred=20 assoc=left: left op='^' right; // exponentiation
+    rule pred=30 assoc=left: left op='*' right;
+    rule pred=30 assoc=left: left op='/' right;
+    rule pred=40 assoc=left: left op='+' right;
+    rule pred=40 assoc=left: left op='-' right;
+
+    rule pred=60 assoc=left: left op="RAY_LE" right;
+    rule pred=60 assoc=left: left op='<'  right;
+    rule pred=60 assoc=left: left op="RAY_GE" right;
+    rule pred=60 assoc=left: left op='>'  right;
+    rule pred=60 assoc=left: left op="RAY_EQ" right;
+    rule pred=60 assoc=left: left op="RAY_NE" right;
+    rule pred=80 assoc=left: left op="RAY_AND" right;
+    rule pred=90 assoc=left: left op="RAY_OR" right;
+
+    rule pred=99 assoc=left: left op='=' right;
+  }
+
+//--CONFLICT WITH RAYRecord  nonterminal RAYTernaryExpr: RAYExpression {
+//--CONFLICT WITH RAYRecord    field condition: RAYExpression;
+//--CONFLICT WITH RAYRecord    field valueTrue: RAYExpression;
+//--CONFLICT WITH RAYRecord    field valueFalse: RAYExpression;
+//--CONFLICT WITH RAYRecord
+//--CONFLICT WITH RAYRecord    rule pred=100 assoc=left: condition '?' valueTrue ':' valueFalse ;
+//--CONFLICT WITH RAYRecord  }
+
+//---------------------
+//--Literal Expressions
+
+  nonterminal RAYBooleanLiteral: RAYExpression {
+    <asis>
+      bool value;
+    </asis>
+
+    <commit>
+      if ( !str_cmp(rule[0].tok_image, "true" ) )
+        result->value = 1;
+      else if ( !str_cmp(rule[0].tok_image, "false" ) )
+        result->value = 0;
+      else
+        p_error("Invalid boolean value");
+    </commit>
+
+    rule: "RAY_BOOLEAN";
+  }
+
+  nonterminal RAYStringLiteral: RAYExpression {
+     <asis>
+       const char* image;
+     </asis>
+
+     <commit>
+       result->image=str_dup(rule[0].tok_image);
+     </commit>
+
+    rule: "RAY_STRING";
+  }
+
+  nonterminal RAYIntegerLiteral: RAYExpression {
+     <asis>
+       int value;
+     </asis>
+
+     <commit>
+       result->value = atoi(rule[0].tok_image);
+     </commit>
+
+    rule: "RAY_INTEGER";
+  }
+
+  nonterminal RAYFloatLiteral: RAYExpression {
+     <asis>
+       float value;
+     </asis>
+
+     <commit>
+        result->value = (float)atof(rule[0].tok_image);
+     </commit>
+
+     rule: "RAY_FLOAT";
+  }
+}
